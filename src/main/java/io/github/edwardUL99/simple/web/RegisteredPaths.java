@@ -5,12 +5,11 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.github.edwardUL99.simple.web.handlers.FaviconGetHandler;
 import io.github.edwardUL99.simple.web.handlers.StaticGetHandler;
+import io.github.edwardUL99.simple.web.logging.ServerLogger;
 import io.github.edwardUL99.simple.web.requests.RequestMethod;
 import io.github.edwardUL99.simple.web.requests.handling.ConfiguredHandlers;
 import io.github.edwardUL99.simple.web.requests.handling.RequestDispatcher;
 import io.github.edwardUL99.simple.web.requests.handling.RequestHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -28,7 +27,7 @@ public class RegisteredPaths {
      * The handlers to register the paths to
      */
     private static final ConfiguredHandlers HANDLERS = RequestDispatcher.getInstance().getHandlers();
-    private static final Logger log = LoggerFactory.getLogger(RegisteredPaths.class);
+    private static final ServerLogger log = ServerLogger.getLogger();
     private static final Gson gson = new Gson();
 
     static {
@@ -40,7 +39,7 @@ public class RegisteredPaths {
 
     private static void register(RequestMethod method, String path, RequestHandler handler) {
         HANDLERS.register(method, path, handler);
-        log.info("Handler {} registered for path {} on method {}", handler.getClass().getName(), path, method);
+        log.info(String.format("Handler %s registered for path %s on method %s", handler.getClass().getName(), path, method));
     }
 
     private static void instantiate(String path, String className, RequestMethod method) {
@@ -49,11 +48,13 @@ public class RegisteredPaths {
             Constructor<?> constructor = cls.getDeclaredConstructor();
             register(method, path, (RequestHandler) constructor.newInstance());
         } catch (ClassNotFoundException ex) {
-            log.error("Can't find handler " + className, ex);
+            log.error("Can't find handler " + className);
+            log.throwable(ex);
         } catch (NoSuchMethodException ex) {
-            log.error("Can't instantiate handler " + className + " as it does not have a no-arg constructor", ex);
+            log.error("Can't instantiate handler " + className + " as it does not have a no-arg constructor");
+            log.throwable(ex);
         } catch (InvocationTargetException | InstantiationException | IllegalAccessException ex) {
-            log.error("Failed to instantiate handler " + className, ex);
+            log.throwable(ex);
         }
     }
 
@@ -82,7 +83,8 @@ public class RegisteredPaths {
                 }
             } catch (IOException ex) {
                 ex.printStackTrace();
-                log.error("Failed to read configuration from paths.json with error: " + ex);
+                log.error("Failed to read configuration from paths.json with error");
+                log.throwable(ex);
             }
         } else {
             log.info("No paths.json found on class path");

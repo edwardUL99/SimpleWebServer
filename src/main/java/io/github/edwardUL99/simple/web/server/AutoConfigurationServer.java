@@ -5,16 +5,14 @@ import io.github.edwardUL99.simple.web.exceptions.ConfigurationException;
 import io.github.edwardUL99.simple.web.exceptions.FatalTerminationException;
 import io.github.edwardUL99.simple.web.exceptions.ParsingException;
 import io.github.edwardUL99.simple.web.exceptions.SocketException;
+import io.github.edwardUL99.simple.web.logging.ServerLogger;
 import io.github.edwardUL99.simple.web.parsing.DefaultHttpParser;
 import io.github.edwardUL99.simple.web.requests.HTTPRequest;
-import io.github.edwardUL99.simple.web.requests.HttpStatus;
 import io.github.edwardUL99.simple.web.requests.handling.RequestDispatcher;
 import io.github.edwardUL99.simple.web.requests.response.DefaultResponseGenerator;
 import io.github.edwardUL99.simple.web.requests.response.HTTPResponse;
 import io.github.edwardUL99.simple.web.sockets.DefaultSocketReceiver;
 import io.github.edwardUL99.simple.web.sockets.ReceivedRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -22,7 +20,6 @@ import java.net.BindException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.time.LocalDateTime;
 
 import static io.github.edwardUL99.simple.web.requests.response.ResponseBuilders.*;
 
@@ -31,7 +28,7 @@ import static io.github.edwardUL99.simple.web.requests.response.ResponseBuilders
  */
 public class AutoConfigurationServer extends BaseServer {
     private final RequestDispatcher requestDispatcher = RequestDispatcher.getInstance();
-    private final Logger log = LoggerFactory.getLogger(AutoConfigurationServer.class);
+    private final ServerLogger serverLog = ServerLogger.getLogger();
 
     public AutoConfigurationServer() {
         super(null, null, null);
@@ -62,20 +59,12 @@ public class AutoConfigurationServer extends BaseServer {
             client.close();
         } catch (IOException ex) {
             ex.printStackTrace();
+            serverLog.throwable(ex);
         }
     }
 
     private void log(HTTPRequest request, HTTPResponse response) {
-        HttpStatus status = response.getStatus();
-        int code = status.getCode();
-
-        String message = String.format("%s - %s [ %s ] HTTP/1.1 - %d %s", LocalDateTime.now(),
-                request.getRequestMethod(), request.getPathInfo().getPath(), code, status.getName());
-
-        if (code < 400)
-            log.info(message);
-        else
-            log.error(message);
+        serverLog.logAccess(request, response);
     }
 
     private void logStart(int port) {
@@ -87,7 +76,7 @@ public class AutoConfigurationServer extends BaseServer {
             hostname = "<unknown>";
         }
 
-        log.info("Server started on host {} and port {}", hostname, port);
+        serverLog.info(String.format("Server started on host %s and port %d", hostname, port));
     }
 
     private void processRequest(ReceivedRequest received) {
@@ -104,9 +93,11 @@ public class AutoConfigurationServer extends BaseServer {
             } catch (Exception ex) {
                 ex.printStackTrace();
                 writeResponse(internalServerError(request).build(), client);
+                serverLog.throwable(ex);
             }
         } catch (ParsingException ex) {
             writeResponse(badRequest(null).build(), client);
+            serverLog.throwable(ex);
         }
     }
 
@@ -121,9 +112,11 @@ public class AutoConfigurationServer extends BaseServer {
             } catch (SocketException ex) {
                 ex.printStackTrace();
                 run = !(ex.getCause() instanceof BindException);
+                serverLog.throwable(ex);
             } catch (FatalTerminationException ex) {
                 ex.printStackTrace();
                 run = false;
+                serverLog.throwable(ex);
             }
         }
     }
