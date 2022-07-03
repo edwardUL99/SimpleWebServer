@@ -1,9 +1,8 @@
-package io.github.edwardUL99.simple.web.requests.handling;
+package io.github.edwardUL99.simple.web.requests.response;
 
 import com.google.gson.Gson;
 import io.github.edwardUL99.simple.web.requests.HTTPRequest;
 import io.github.edwardUL99.simple.web.requests.HttpStatus;
-import io.github.edwardUL99.simple.web.requests.response.HTTPResponse;
 
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -53,10 +52,7 @@ public class ResponseEntity<T> implements HTTPResponse {
 
     @Override
     public byte[] getBody() {
-        byte[] bytes = gson.toJson(body, body.getClass()).getBytes(StandardCharsets.UTF_8);
-        headers.put("Content-Length", "" + bytes.length);
-
-        return bytes;
+        return gson.toJson(body, body.getClass()).getBytes(StandardCharsets.UTF_8);
     }
 
     @Override

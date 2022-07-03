@@ -11,13 +11,21 @@ import java.time.format.DateTimeFormatter;
  */
 public final class Constants {
     /**
+     * Environment variable to store the port for the server
+     */
+    public static final String ENV_PORT = "SIMPLE_SERVER_PORT";
+    /**
      * The environment variable that stores the path to the storage location
      */
-    public static final String ENV_STORAGE_DIR_LOCATION = "SERVER_DIR";
+    public static final String ENV_STORAGE_DIR_LOCATION = "SIMPLE_SERVER_DIR";
     /**
      * The system property that stores the path to the storage location
      */
     public static final String PROP_STORAGE_DIR_LOCATION = "server.dir";
+    /**
+     * A property to store the port for the server
+     */
+    public static final String PROP_PORT = "server.port";
     /**
      * The name of the directory that stores the files underneath the server directory
      */

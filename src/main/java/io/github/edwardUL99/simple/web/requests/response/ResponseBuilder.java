@@ -23,7 +23,6 @@ public class ResponseBuilder {
 
     public ResponseBuilder withBody(byte[] body) {
         this.body = body;
-        headers.put("Content-Length", "" + body.length);
 
         return this;
     }

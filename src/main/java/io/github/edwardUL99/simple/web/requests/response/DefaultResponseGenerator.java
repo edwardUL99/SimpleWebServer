@@ -11,7 +11,10 @@ import java.util.Map;
 public class DefaultResponseGenerator implements HTTPResponseGenerator {
     private static final String CRLF = "\r\n";
 
-    private String generateHeaders(Map<String, String> headers) {
+    private String generateHeaders(Map<String, String> headers, int contentLength) {
+        if (!headers.containsKey("Content-Length"))
+            headers.put("Content-Length", "" + contentLength);
+
         StringBuilder builder = new StringBuilder();
 
         for (Map.Entry<String, String> e : headers.entrySet())
@@ -41,11 +44,12 @@ public class DefaultResponseGenerator implements HTTPResponseGenerator {
     @Override
     public byte[] generate(HTTPResponse response) {
         HttpStatus status = response.getStatus();
+        byte[] body = response.getBody();
+
         String headerLine = String.format("HTTP/1.1 %d %s%s", status.getCode(), status.getName(), CRLF);
-        String headers = generateHeaders(response.getHeaders());
+        String headers = generateHeaders(response.getHeaders(), body.length);
 
         byte[] headerBytes = String.format("%s%s", headerLine, headers).getBytes(StandardCharsets.UTF_8);
-        byte[] body = response.getBody();
 
         return mergeHeaderBody(headerBytes, body);
     }

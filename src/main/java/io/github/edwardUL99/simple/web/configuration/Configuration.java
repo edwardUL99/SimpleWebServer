@@ -10,22 +10,22 @@ import java.nio.file.Path;
  * Stores configuration details for the server
  */
 public class Configuration {
-    private int port;
+    private Integer port;
     private Path serverDirectory;
     private static Configuration globalConfiguration;
 
-    public Configuration(int port, Path serverDirectory) {
+    public Configuration(Integer port, Path serverDirectory) {
         this.port = port;
         this.serverDirectory = serverDirectory;
         this.initialise();
     }
 
-    public Configuration(int port) {
+    public Configuration(Integer port) {
         this(port, null);
     }
 
     public Configuration() {
-        this(8080);
+        this(null);
     }
 
     private void serverDirExists(Path serverDirectory) {
@@ -33,7 +33,7 @@ public class Configuration {
             throw new ConfigurationException("Server directory does not exist!");
     }
 
-    private void initialise() {
+    private void initialiseServerDirectory() {
         if (this.serverDirectory == null) {
             String path = System.getenv(Constants.ENV_STORAGE_DIR_LOCATION);
 
@@ -50,6 +50,25 @@ public class Configuration {
 
         if (!Files.isDirectory(Constants.getHttpDirectory(serverDirectory)))
             throw new ConfigurationException("The directory http should exist to store all server files in the server directory");
+    }
+
+    private void initialisePort() {
+        if (this.port == null) {
+            String portString = System.getenv(Constants.ENV_PORT);
+
+            if (portString == null)
+                portString = System.getProperty(Constants.PROP_PORT);
+
+            if (portString == null)
+                throw new ConfigurationException("Cannot configure server since port is not specified");
+
+            this.port = Integer.parseInt(portString);
+        }
+    }
+
+    private void initialise() {
+        initialisePort();
+        initialiseServerDirectory();
     }
 
     public int getPort() {
