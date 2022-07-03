@@ -70,6 +70,12 @@ public class Configuration {
 
     public static void setGlobalConfiguration(Configuration globalConfiguration) {
         Configuration.globalConfiguration = globalConfiguration;
+
+        try {
+            Class.forName("io.github.edwardUL99.simple.web.RegisteredPaths");
+        } catch (ClassNotFoundException ex) {
+            throw new ConfigurationException("Failed to initialise request handlers", ex);
+        }
     }
 
     public static Configuration getGlobalConfiguration() {

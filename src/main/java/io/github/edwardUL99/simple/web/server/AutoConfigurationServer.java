@@ -8,8 +8,7 @@ import io.github.edwardUL99.simple.web.exceptions.SocketException;
 import io.github.edwardUL99.simple.web.parsing.DefaultHttpParser;
 import io.github.edwardUL99.simple.web.requests.HTTPRequest;
 import io.github.edwardUL99.simple.web.requests.HttpStatus;
-import io.github.edwardUL99.simple.web.requests.handling.RequestHandler;
-import io.github.edwardUL99.simple.web.requests.handling.RequestHandlers;
+import io.github.edwardUL99.simple.web.requests.handling.RequestDispatcher;
 import io.github.edwardUL99.simple.web.requests.response.DefaultResponseGenerator;
 import io.github.edwardUL99.simple.web.requests.response.HTTPResponse;
 import io.github.edwardUL99.simple.web.sockets.DefaultSocketReceiver;
@@ -19,6 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.BindException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
@@ -30,6 +30,7 @@ import static io.github.edwardUL99.simple.web.requests.response.ResponseBuilders
  * A server that automatically configures itself
  */
 public class AutoConfigurationServer extends BaseServer {
+    private final RequestDispatcher requestDispatcher = RequestDispatcher.getInstance();
     private final Logger log = LoggerFactory.getLogger(AutoConfigurationServer.class);
 
     public AutoConfigurationServer() {
@@ -49,15 +50,7 @@ public class AutoConfigurationServer extends BaseServer {
         parser = new DefaultHttpParser();
         generator = new DefaultResponseGenerator();
 
-        String hostname;
-
-        try {
-            hostname = InetAddress.getLocalHost().getHostAddress();
-        } catch (UnknownHostException ex) {
-            hostname = "<unknown>";
-        }
-
-        log.info("Server started on host {} and port {}", hostname, port);
+        logStart(port);
     }
 
     private void writeResponse(HTTPResponse response, Socket client) {
@@ -85,38 +78,49 @@ public class AutoConfigurationServer extends BaseServer {
             log.error(message);
     }
 
+    private void logStart(int port) {
+        String hostname;
+
+        try {
+            hostname = InetAddress.getLocalHost().getHostAddress();
+        } catch (UnknownHostException ex) {
+            hostname = "<unknown>";
+        }
+
+        log.info("Server started on host {} and port {}", hostname, port);
+    }
+
+    private void processRequest(ReceivedRequest received) {
+        Socket client = received.getClientSocket();
+
+        try {
+            HTTPRequest request = parser.parseHTTP(received);
+
+            try {
+                HTTPResponse response = requestDispatcher.dispatch(request);
+
+                writeResponse(response, client);
+                log(request, response);
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                writeResponse(internalServerError(request).build(), client);
+            }
+        } catch (ParsingException ex) {
+            writeResponse(badRequest(null).build(), client);
+        }
+    }
+
     private void run() {
         boolean run = true;
 
         while (run) {
             try {
                 ReceivedRequest received = receiver.receive();
-                Socket client = received.getClientSocket();
 
-                try {
-                    HTTPRequest request = parser.parseHTTP(received);
-
-                    try {
-                        RequestHandler handler = RequestHandlers.getHandler(request.getRequestMethod());
-                        HTTPResponse response;
-
-                        if (handler == null) {
-                            response = serviceUnavailable(request).build();
-                        } else {
-                            response = handler.handleRequest(request);
-                        }
-
-                        writeResponse(response, client);
-                        log(request, response);
-                    } catch (Exception ex) {
-                        ex.printStackTrace();
-                        writeResponse(internalServerError(request).build(), client);
-                    }
-                } catch (ParsingException ex) {
-                    writeResponse(badRequest(null).build(), client);
-                }
+                processRequest(received);
             } catch (SocketException ex) {
                 ex.printStackTrace();
+                run = !(ex.getCause() instanceof BindException);
             } catch (FatalTerminationException ex) {
                 ex.printStackTrace();
                 run = false;
