@@ -38,8 +38,54 @@ If any of these are set and command line arguments are passed in, the command li
 and not both)
 
 ## Endpoints
+There are two ways to define endpoints: Automatic or Manual
+
+### Automatic
+Automated endpoint registration is annotation driven. The 2 annotations (in package io.github.edwardUL99.simple.web.configuration.annotations) are:
+- **RequestController**: Annotated on a class that contains public methods annotated with the handler annotation.
+It takes an optional argument which is a path that is used as a base path that is prefixed onto the paths passed into the
+handler annotations. The class must have a no-arg constructor.
+- **RequestHandler**: Annotated on a public method to mark it as a method within its controller that can process a request
+and return a response. The methods must take a single HTTPRequest parameter and return an object implementing the HTTPResponse
+interface. They must be contained within a class annotated with RequestController, otherwise they won't be registered on startup.
+
+Example:
+```java
+package io.github.edwardUL99.simple.web;
+
+import io.github.edwardUL99.simple.web.configuration.annotations.RequestController;
+import io.github.edwardUL99.simple.web.configuration.annotations.RequestHandler;
+import io.github.edwardUL99.simple.web.requests.HTTPRequest;
+import io.github.edwardUL99.simple.web.requests.HttpStatus;
+import io.github.edwardUL99.simple.web.requests.RequestMethod;
+import io.github.edwardUL99.simple.web.requests.response.HTTPResponse;
+import io.github.edwardUL99.simple.web.requests.response.ResponseEntity;
+
+import java.util.Map;
+
+@RequestController("/hello")
+public class HelloWorldController {
+    @RequestHandler(value = "/world", methods = {RequestMethod.GET, RequestMethod.POST})
+    public HTTPResponse helloWorld(HTTPRequest request) {
+        return new ResponseEntity.Builder<Map<String, String>>(request)
+                .withStatus(HttpStatus.OK)
+                .withBody(Map.of("message", "Hello World"))
+                .build();
+    }
+}
+```
+A GET or POST request to the server with path /hello/world will return the following JSON:
+```json
+{
+  "message": "Hello World"
+}
+```
+This is the preferred means of creating endpoints. However, you can still use manual registration either programatically
+or with the paths.json file.
+
+### Manual
 To register an endpoint, you need to create a request handler which is registered against a request method and path. All handlers
-must implement the RequestHandler interface. These implementations can be registered in the static block of the [RegisteredPaths](src/main/java/io/github/edwardUL99/simple/web/RegisteredPaths.java) static block, for example:
+must implement the RequestHandler interface. These implementations can be registered in the static block of the [RegisteredHandlers](src/main/java/io/github/edwardUL99/simple/web/RegisteredHandlers.java) static block, for example:
 ```java
 static {
     configure(); // configures from paths.json on classpath
@@ -55,7 +101,7 @@ under the appropriate method, for example:
 {
   "paths": {
     "GET": {
-      "/path/**": "io.github.edwardUL99.simple.web.handlers.PathWildcardedHandler"
+      "/path/**": "io.github.edwardUL99.simple.web.controllers.PathWildcardedHandler"
     },
     "POST": {
     },
@@ -70,7 +116,7 @@ under the appropriate method, for example:
 ```
 As seen in this example, the paths can be wildcarded, where /path/** will match any path that starts with /path/.
 
-See the [handlers](src/main/java/io/github/edwardUL99/simple/web/handlers) directory for examples of the static and favicon
+See the [handlers](src/main/java/io/github/edwardUL99/simple/web/controllers) directory for examples of the static and favicon
 request handlers.
 
 You can return a [ResponseEntity](src/main/java/io/github/edwardUL99/simple/web/requests/response/ResponseEntity.java) object

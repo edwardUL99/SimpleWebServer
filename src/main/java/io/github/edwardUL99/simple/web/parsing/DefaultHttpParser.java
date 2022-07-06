@@ -1,15 +1,18 @@
 package io.github.edwardUL99.simple.web.parsing;
 
 import io.github.edwardUL99.simple.web.exceptions.ParsingException;
+import io.github.edwardUL99.simple.web.parsing.processing.PostProcessor;
 import io.github.edwardUL99.simple.web.requests.DefaultHTTPRequest;
 import io.github.edwardUL99.simple.web.requests.HTTPRequest;
-import io.github.edwardUL99.simple.web.requests.PathInfo;
 import io.github.edwardUL99.simple.web.requests.RequestMethod;
 import io.github.edwardUL99.simple.web.sockets.ReceivedRequest;
+import io.github.edwardUL99.simple.web.utils.Utils;
 
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -17,7 +20,22 @@ import java.util.concurrent.atomic.AtomicReference;
  * The default implementation of the HTTP Parser
  */
 public class DefaultHttpParser implements HttpParser {
-    private PathInfo parsePathInfo(String path) {
+    private final List<PostProcessor> postProcessors;
+
+    public DefaultHttpParser() {
+        this(new ArrayList<>());
+    }
+
+    public DefaultHttpParser(List<PostProcessor> postProcessors) {
+        this.postProcessors = new ArrayList<>(postProcessors);
+    }
+
+    @Override
+    public void addPostProcessor(PostProcessor processor) {
+        postProcessors.add(processor);
+    }
+
+    private Object[] parsePathInfo(String path) {
         path = URLDecoder.decode(path, StandardCharsets.UTF_8);
         String[] split = path.split("\\?");
 
@@ -25,21 +43,14 @@ public class DefaultHttpParser implements HttpParser {
             throw new ParsingException("Invalid path: " + path);
 
         String pathPart = split[0];
-        Map<String, String> params = new HashMap<>();
+        Map<String, String> params;
 
-        if (split.length > 1) {
-            String[] paramsSplit = split[1].split("&");
+        if (split.length > 1)
+            params = Utils.parseParams(split[1]);
+        else
+            params = new HashMap<>();
 
-            for (String paramPair : paramsSplit) {
-                if (!paramPair.contains("="))
-                    throw new ParsingException("Invalid Query Parameters");
-
-                String[] paramSplit = paramPair.split("=");
-                params.put(paramSplit[0], paramSplit[1]);
-            }
-        }
-
-        return new PathInfo(pathPart, params);
+        return new Object[]{pathPart, params};
     }
 
     // parses GET path http version [0] = RequestMethod [1] = PathInfo [2] = Version
@@ -79,9 +90,11 @@ public class DefaultHttpParser implements HttpParser {
         return headers;
     }
 
+    @SuppressWarnings("unchecked")
     private HTTPRequest parseLines(String[] lines) {
         RequestMethod requestMethod = null;
-        PathInfo pathInfo = null;
+        String path = null;
+        Map<String, String> params = new HashMap<>();
         Map<String, String> headers = new HashMap<>();
         StringBuilder content = new StringBuilder();
         boolean contentFound = false;
@@ -91,12 +104,14 @@ public class DefaultHttpParser implements HttpParser {
         for (int i = 0; i < lines.length; i++) {
             parsePosition.set(i);
 
-            if (i == 0 || (requestMethod == null && pathInfo == null)) {
+            if (i == 0 || (requestMethod == null && path == null)) {
                 Object[] requestInfo = parseRequestLine(lines[i]);
 
                 if (requestInfo != null) {
                     requestMethod = (RequestMethod) requestInfo[0];
-                    pathInfo = (PathInfo) requestInfo[1];
+                    Object[] pathInfo = (Object[]) requestInfo[1];
+                    path = (String) pathInfo[0];
+                    params = (Map<String, String>) pathInfo[1];
                 }
             } else if (!contentFound) {
                 headers = parseHeaders(lines, parsePosition);
@@ -107,7 +122,16 @@ public class DefaultHttpParser implements HttpParser {
             }
         }
 
-        return new DefaultHTTPRequest(requestMethod, pathInfo, headers, content.toString());
+        return new DefaultHTTPRequest(requestMethod, path, params, headers, content.toString());
+    }
+
+    private HTTPRequest postProcess(HTTPRequest initialRequest) {
+        HTTPRequest current = initialRequest;
+
+        for (PostProcessor processor : postProcessors)
+            current = processor.process(current);
+
+        return current;
     }
 
     @Override
@@ -115,6 +139,7 @@ public class DefaultHttpParser implements HttpParser {
         String body = request.getBody();
         String[] lines = body.split("\r\n");
 
-        return parseLines(lines);
+        return postProcess
+                (parseLines(lines));
     }
 }

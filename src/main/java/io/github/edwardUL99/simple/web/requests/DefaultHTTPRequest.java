@@ -7,13 +7,15 @@ import java.util.Map;
  */
 public class DefaultHTTPRequest implements HTTPRequest {
     private final RequestMethod requestMethod;
-    private final PathInfo pathInfo;
+    private final String path;
+    private final Map<String, String> params;
     private final Map<String, String> headers;
     private final String body;
 
-    public DefaultHTTPRequest(RequestMethod requestMethod, PathInfo pathInfo, Map<String, String> headers, String body) {
+    public DefaultHTTPRequest(RequestMethod requestMethod, String path, Map<String, String> params, Map<String, String> headers, String body) {
         this.requestMethod = requestMethod;
-        this.pathInfo = pathInfo;
+        this.path = path;
+        this.params = params;
         this.headers = headers;
         this.body = body;
     }
@@ -24,8 +26,12 @@ public class DefaultHTTPRequest implements HTTPRequest {
     }
 
     @Override
-    public PathInfo getPathInfo() {
-        return pathInfo;
+    public String getPath() {
+        return path;
+    }
+
+    public Map<String, String> getParams() {
+        return params;
     }
 
     @Override

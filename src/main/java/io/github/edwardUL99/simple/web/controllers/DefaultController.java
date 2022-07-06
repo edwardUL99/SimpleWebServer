@@ -1,13 +1,13 @@
-package io.github.edwardUL99.simple.web.handlers;
+package io.github.edwardUL99.simple.web.controllers;
 
 import io.github.edwardUL99.simple.web.Constants;
 import io.github.edwardUL99.simple.web.configuration.Configuration;
-import io.github.edwardUL99.simple.web.exceptions.ConfigurationException;
+import io.github.edwardUL99.simple.web.configuration.annotations.RequestController;
+import io.github.edwardUL99.simple.web.configuration.annotations.RequestHandler;
 import io.github.edwardUL99.simple.web.exceptions.RequestException;
 import io.github.edwardUL99.simple.web.requests.HTTPRequest;
-import io.github.edwardUL99.simple.web.requests.PathInfo;
-import io.github.edwardUL99.simple.web.requests.handling.RequestHandler;
 import io.github.edwardUL99.simple.web.requests.response.HTTPResponse;
+import io.github.edwardUL99.simple.web.requests.response.ResponseBuilders;
 import io.github.edwardUL99.simple.web.utils.Utils;
 
 import java.nio.file.Files;
@@ -16,19 +16,29 @@ import java.nio.file.Path;
 import static io.github.edwardUL99.simple.web.requests.response.ResponseBuilders.notFound;
 
 /**
- * Used to implement static path retrieval
+ * A controller to implement built in methods
  */
-public class StaticGetHandler implements RequestHandler {
+@RequestController
+public class DefaultController {
     private final Path httpDirectory;
     private static final String STATIC = "/static";
 
-    public StaticGetHandler() {
+    public DefaultController() {
         Configuration config = Configuration.getGlobalConfiguration();
 
-        if (config == null)
-            throw new ConfigurationException("Server is not configured so cannot handle requests");
-
         httpDirectory = Constants.getHttpDirectory(config.getServerDirectory());
+    }
+
+    @RequestHandler("/favicon.ico")
+    public HTTPResponse favicon(HTTPRequest request) throws RequestException {
+        Path file = httpDirectory.resolve("favicon.ico");
+
+        if (!Files.isRegularFile(file)) {
+            return ResponseBuilders.notFound(request).build();
+        } else {
+            return Utils.parseFileToResponse(request, file)
+                    .build();
+        }
     }
 
     private String normalizePath(String filePath) {
@@ -46,22 +56,21 @@ public class StaticGetHandler implements RequestHandler {
         return filePath;
     }
 
-    private Path retrieveFile(PathInfo pathInfo) {
-        String filepath = normalizePath(pathInfo.getPath());
+    private Path retrieveFile(String path) {
+        String filepath = normalizePath(path);
 
-        Path path = httpDirectory.resolve(filepath);
+        Path filePath = httpDirectory.resolve(filepath);
 
-        if (!Files.isRegularFile(path)) {
+        if (!Files.isRegularFile(filePath)) {
             return null;
         } else {
-            return path;
+            return filePath;
         }
     }
 
-    @Override
-    public HTTPResponse handleRequest(HTTPRequest request) throws RequestException {
-        PathInfo pathInfo = request.getPathInfo();
-        Path file = retrieveFile(pathInfo);
+    @RequestHandler("/static/**")
+    public HTTPResponse staticFiles(HTTPRequest request) throws RequestException {
+        Path file = retrieveFile(request.getPath());
 
         if (file == null) {
             return notFound(request)

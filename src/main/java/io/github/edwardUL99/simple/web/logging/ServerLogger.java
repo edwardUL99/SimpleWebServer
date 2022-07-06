@@ -83,7 +83,7 @@ public class ServerLogger {
         HttpStatus status = response.getStatus();
         int code = status.getCode();
         String message = String.format("%s [ %s ] HTTP/1.1 - %d %s",
-                request.getRequestMethod(), request.getPathInfo().getPath(), code, status.getName());
+                request.getRequestMethod(), request.getPath(), code, status.getName());
 
         if (code < 400) {
             writeLine(LogType.INFO, message);
@@ -97,12 +97,17 @@ public class ServerLogger {
         PrintWriter writer = new PrintWriter(stringWriter);
         throwable.printStackTrace(writer);
 
-        writeLine(LogType.ERROR, stringWriter.toString());
-        log.error(stringWriter.toString());
+        String ex = stringWriter.toString();
+
+        writeLine(LogType.ERROR, ex);
     }
 
     public void info(String info) {
         writeLine(LogType.INFO, info);
+    }
+
+    public void debug(String debug) {
+        log.debug(debug);
     }
 
     public void error(String error) {

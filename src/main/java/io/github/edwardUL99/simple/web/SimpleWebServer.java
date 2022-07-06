@@ -3,6 +3,7 @@ package io.github.edwardUL99.simple.web;
 import io.github.edwardUL99.simple.web.configuration.Configuration;
 import io.github.edwardUL99.simple.web.logging.ServerLogger;
 import io.github.edwardUL99.simple.web.server.AutoConfigurationServer;
+import io.github.edwardUL99.simple.web.server.Server;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -13,6 +14,12 @@ import java.util.List;
  * The main entrypoint into the server
  */
 public final class SimpleWebServer {
+    private static Server serverInstance;
+
+    public static Server getServerInstance() {
+        return serverInstance;
+    }
+
     private static Configuration getConfiguration(String[] args) {
         if (args.length > 0) {
             Integer port = null;
@@ -55,6 +62,8 @@ public final class SimpleWebServer {
         ServerLogger log = ServerLogger.getLogger();
         log.info(String.format("Starting SimpleWebServer from class %s", runningClass.getName()));
 
-        new AutoConfigurationServer().listen();
+        serverInstance = new AutoConfigurationServer();
+        serverInstance.listen();
+        serverInstance = null;
     }
 }

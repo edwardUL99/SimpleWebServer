@@ -75,6 +75,7 @@ public class ResponseEntity<T> implements HTTPResponse {
             this.headers = new HashMap<>(
                     Map.of("Content-Type", "application/json")
             );
+            this.status = HttpStatus.OK;
         }
 
         public Builder<T> withHeader(String name, String value) {

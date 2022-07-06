@@ -3,13 +3,12 @@ package io.github.edwardUL99.simple.web;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import io.github.edwardUL99.simple.web.handlers.FaviconGetHandler;
-import io.github.edwardUL99.simple.web.handlers.StaticGetHandler;
 import io.github.edwardUL99.simple.web.logging.ServerLogger;
 import io.github.edwardUL99.simple.web.requests.RequestMethod;
 import io.github.edwardUL99.simple.web.requests.handling.ConfiguredHandlers;
 import io.github.edwardUL99.simple.web.requests.handling.RequestDispatcher;
 import io.github.edwardUL99.simple.web.requests.handling.RequestHandler;
+import io.github.edwardUL99.simple.web.server.Server;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -22,7 +21,7 @@ import java.util.Map;
  * A utility class which is loaded by {@link io.github.edwardUL99.simple.web.configuration.Configuration} to register
  * all paths inside the static block
  */
-public class RegisteredPaths {
+public class RegisteredHandlers {
     /**
      * The handlers to register the paths to
      */
@@ -32,14 +31,20 @@ public class RegisteredPaths {
 
     static {
         configure(); // configures from paths.json on classpath
-
-        register(RequestMethod.GET, "/static/**", new StaticGetHandler()); // for static file path handling
-        register(RequestMethod.GET, "/favicon.ico", new FaviconGetHandler()); // for browsers retrieving favicons
     }
 
-    private static void register(RequestMethod method, String path, RequestHandler handler) {
+    private static boolean isServerStarted() {
+        Server server = SimpleWebServer.getServerInstance();
+
+        return server != null && server.isStarted();
+    }
+
+    public static void register(RequestMethod method, String path, RequestHandler handler) {
+        if (isServerStarted())
+            throw new IllegalStateException("Cannot register a handler after the server has been started");
+
         HANDLERS.register(method, path, handler);
-        log.info(String.format("Handler %s registered for path %s on method %s", handler.getClass().getName(), path, method));
+        log.debug(String.format("Handler %s registered for path %s on method %s", handler.getClass().getName(), path, method));
     }
 
     private static void instantiate(String path, String className, RequestMethod method) {
@@ -59,7 +64,7 @@ public class RegisteredPaths {
     }
 
     private static void configure() {
-        URL url = RegisteredPaths.class.getClassLoader().getResource("paths.json");
+        URL url = RegisteredHandlers.class.getClassLoader().getResource("paths.json");
 
         if (url != null) {
             try {

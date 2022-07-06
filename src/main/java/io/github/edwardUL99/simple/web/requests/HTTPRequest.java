@@ -7,7 +7,8 @@ import java.util.Map;
  */
 public interface HTTPRequest {
     RequestMethod getRequestMethod();
-    PathInfo getPathInfo();
+    String getPath();
+    Map<String, String> getParams();
     Map<String, String> getHeaders();
     String getBody();
 }

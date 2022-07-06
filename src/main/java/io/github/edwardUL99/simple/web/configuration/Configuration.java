@@ -1,6 +1,7 @@
 package io.github.edwardUL99.simple.web.configuration;
 
 import io.github.edwardUL99.simple.web.Constants;
+import io.github.edwardUL99.simple.web.configuration.annotations.AnnotationsProcessor;
 import io.github.edwardUL99.simple.web.exceptions.ConfigurationException;
 
 import java.nio.file.Files;
@@ -91,13 +92,17 @@ public class Configuration {
         Configuration.globalConfiguration = globalConfiguration;
 
         try {
-            Class.forName("io.github.edwardUL99.simple.web.RegisteredPaths");
+            Class.forName("io.github.edwardUL99.simple.web.RegisteredHandlers");
+            AnnotationsProcessor.newInstance().processAnnotations(); // the new annotations processing method of registering handlers
         } catch (ClassNotFoundException ex) {
             throw new ConfigurationException("Failed to initialise request handlers", ex);
         }
     }
 
     public static Configuration getGlobalConfiguration() {
+        if (globalConfiguration == null)
+            throw new ConfigurationException("Server is not configured so cannot handle requests");
+
         return globalConfiguration;
     }
 }

@@ -27,7 +27,7 @@ public class RequestDispatcher {
     }
 
     public HTTPResponse dispatch(HTTPRequest request) throws RequestException {
-        RequestHandler handler = handlers.getHandler(request.getRequestMethod(), request.getPathInfo().getPath());
+        RequestHandler handler = handlers.getHandler(request.getRequestMethod(), request.getPath());
 
         return (handler == null) ? ResponseBuilders.notFound(request).build() : handler.handleRequest(request);
     }

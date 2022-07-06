@@ -7,6 +7,8 @@ import io.github.edwardUL99.simple.web.exceptions.ParsingException;
 import io.github.edwardUL99.simple.web.exceptions.SocketException;
 import io.github.edwardUL99.simple.web.logging.ServerLogger;
 import io.github.edwardUL99.simple.web.parsing.DefaultHttpParser;
+import io.github.edwardUL99.simple.web.parsing.processing.FormDataProcessor;
+import io.github.edwardUL99.simple.web.parsing.processing.PostProcessor;
 import io.github.edwardUL99.simple.web.requests.HTTPRequest;
 import io.github.edwardUL99.simple.web.requests.handling.RequestDispatcher;
 import io.github.edwardUL99.simple.web.requests.response.DefaultResponseGenerator;
@@ -20,6 +22,9 @@ import java.net.BindException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static io.github.edwardUL99.simple.web.requests.response.ResponseBuilders.*;
 
@@ -29,10 +34,17 @@ import static io.github.edwardUL99.simple.web.requests.response.ResponseBuilders
 public class AutoConfigurationServer extends BaseServer {
     private final RequestDispatcher requestDispatcher = RequestDispatcher.getInstance();
     private final ServerLogger serverLog = ServerLogger.getLogger();
+    private boolean started;
 
     public AutoConfigurationServer() {
         super(null, null, null);
         this.initialise();
+    }
+
+    private List<PostProcessor> getPostProcessors() {
+        return List.of(
+                new FormDataProcessor()
+        );
     }
 
     private void initialise() {
@@ -44,7 +56,7 @@ public class AutoConfigurationServer extends BaseServer {
         int port = config.getPort();
 
         receiver = new DefaultSocketReceiver(port);
-        parser = new DefaultHttpParser();
+        parser = new DefaultHttpParser(getPostProcessors());
         generator = new DefaultResponseGenerator();
 
         logStart(port);
@@ -91,7 +103,6 @@ public class AutoConfigurationServer extends BaseServer {
                 writeResponse(response, client);
                 log(request, response);
             } catch (Exception ex) {
-                ex.printStackTrace();
                 writeResponse(internalServerError(request).build(), client);
                 serverLog.throwable(ex);
             }
@@ -102,23 +113,31 @@ public class AutoConfigurationServer extends BaseServer {
     }
 
     private void run() {
+        ExecutorService executorService = Executors.newFixedThreadPool(30);
+
         boolean run = true;
 
         while (run) {
             try {
+                started = true;
                 ReceivedRequest received = receiver.receive();
 
-                processRequest(received);
+                executorService.submit(() -> processRequest(received));
             } catch (SocketException ex) {
-                ex.printStackTrace();
                 run = !(ex.getCause() instanceof BindException);
                 serverLog.throwable(ex);
             } catch (FatalTerminationException ex) {
-                ex.printStackTrace();
                 run = false;
                 serverLog.throwable(ex);
             }
         }
+
+        started = false;
+    }
+
+    @Override
+    public boolean isStarted() {
+        return started;
     }
 
     @Override
