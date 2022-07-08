@@ -50,6 +50,14 @@
                 <configuration>
                     <source>11</source>
                     <target>11</target>
+                    <compilerArgument>-parameters</compilerArgument>
+                    <testCompilerArgument>-parameters</testCompilerArgument>
+                    <parameters>true</parameters>
+                    <debug>true</debug>
+                    <compilerArgs>
+                        <arg>-parameters</arg>
+                        <arg>-g</arg>
+                    </compilerArgs>
                 </configuration>
             </plugin>
             <plugin>

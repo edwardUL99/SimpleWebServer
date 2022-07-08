@@ -2,9 +2,8 @@ package io.github.edwardUL99.simple.web.configuration.annotations;
 
 import io.github.edwardUL99.simple.web.RegisteredHandlers;
 import io.github.edwardUL99.simple.web.exceptions.ConfigurationException;
-import io.github.edwardUL99.simple.web.exceptions.RequestException;
-import io.github.edwardUL99.simple.web.requests.HTTPRequest;
 import io.github.edwardUL99.simple.web.requests.RequestMethod;
+import io.github.edwardUL99.simple.web.requests.handling.reflection.ReflectiveInvocationHandler;
 import io.github.edwardUL99.simple.web.requests.response.HTTPResponse;
 import org.reflections.Reflections;
 import org.reflections.util.ClasspathHelper;
@@ -38,32 +37,8 @@ public class AnnotationsProcessorImpl implements AnnotationsProcessor {
         if (!Modifier.isPublic(method.getModifiers()))
             throw new ConfigurationException("Handler methods must be public: " + methodName);
 
-        if (method.getParameterCount() != 1) {
-            throw new ConfigurationException("Handler methods must have 1 argument of type HTTPRequest: " + methodName);
-        } else {
-            Class<?> parameterType = method.getParameterTypes()[0];
-
-            if (!HTTPRequest.class.equals(parameterType))
-                throw new ConfigurationException("Handler methods must take 1 HTTPRequest parameter: " + methodName);
-        }
-
         if (!HTTPResponse.class.isAssignableFrom(method.getReturnType()))
             throw new ConfigurationException("Handler methods must return a HTTPResponse implementation: " + methodName);
-    }
-
-    private io.github.edwardUL99.simple.web.requests.handling.RequestHandler createHandler(Object instance, Method method) {
-        return r -> {
-            try {
-                return (HTTPResponse) method.invoke(instance, r);
-            } catch (IllegalAccessException | InvocationTargetException ex) {
-                Throwable cause = ex.getCause();
-
-                if (cause instanceof RequestException)
-                    throw (RequestException) cause;
-                else
-                    throw new RequestException("Failed to invoke request handler method", ex);
-            }
-        };
     }
 
     private String addBasePath(String basePath, String path) {
@@ -86,13 +61,13 @@ public class AnnotationsProcessorImpl implements AnnotationsProcessor {
 
                 String path = handler.value();
                 RequestMethod[] requestMethods = handler.methods();
-                io.github.edwardUL99.simple.web.requests.handling.RequestHandler requestHandler= createHandler(instance, method);
 
                 RequestController annotation = controller.getAnnotation(RequestController.class);
                 path = addBasePath(annotation.value(), path);
 
                 for (RequestMethod requestMethod : requestMethods)
-                    RegisteredHandlers.register(requestMethod, path, requestHandler);
+                    RegisteredHandlers.register(requestMethod, path,
+                            new ReflectiveInvocationHandler(instance, method));
             }
         }
     }
