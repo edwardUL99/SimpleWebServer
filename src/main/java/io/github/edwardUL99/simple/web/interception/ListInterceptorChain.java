@@ -56,4 +56,12 @@ public class ListInterceptorChain<T> implements InterceptorChain<T> {
     public T getResult() {
         return result;
     }
+
+    /**
+     * Resets the chain to the start
+     */
+    @Override
+    public void reset() {
+        this.index = 0;
+    }
 }

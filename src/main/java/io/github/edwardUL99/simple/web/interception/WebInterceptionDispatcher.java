@@ -49,6 +49,8 @@ public class WebInterceptionDispatcher {
             intercepted = request;
         }
 
+        requestChain.reset();
+
         return intercepted;
     }
 
@@ -60,6 +62,8 @@ public class WebInterceptionDispatcher {
     public InterceptedResponse onOutboundResponse(InterceptedResponse response) {
         responseChain.next(response);
         InterceptedResponse intercepted = responseChain.getResult();
+
+        responseChain.reset();
 
         return Objects.requireNonNullElse(intercepted, response);
     }

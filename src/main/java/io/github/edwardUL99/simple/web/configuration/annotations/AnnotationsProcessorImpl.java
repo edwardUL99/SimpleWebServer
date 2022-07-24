@@ -5,6 +5,7 @@ import io.github.edwardUL99.simple.web.exceptions.ConfigurationException;
 import io.github.edwardUL99.simple.web.requests.RequestMethod;
 import io.github.edwardUL99.simple.web.requests.handling.reflection.ReflectiveInvocationHandler;
 import io.github.edwardUL99.simple.web.requests.response.HTTPResponse;
+import io.github.edwardUL99.simple.web.utils.Utils;
 import org.reflections.Reflections;
 import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
@@ -20,12 +21,7 @@ import java.util.List;
  * Implementation of our annotations processor
  */
 public class AnnotationsProcessorImpl implements AnnotationsProcessor {
-    private final Reflections reflection;
-
-    public AnnotationsProcessorImpl() {
-        reflection = new Reflections(new ConfigurationBuilder()
-                .addUrls(ClasspathHelper.forJavaClassPath()));
-    }
+    private final Reflections reflection = Utils.getReflections();
 
     private List<Class<?>> getControllers() {
         return new ArrayList<>(reflection.getTypesAnnotatedWith(RequestController.class));

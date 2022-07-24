@@ -1,6 +1,7 @@
 package io.github.edwardUL99.simple.web;
 
 import io.github.edwardUL99.simple.web.configuration.Configuration;
+import io.github.edwardUL99.simple.web.initialization.WebServerInitializers;
 import io.github.edwardUL99.simple.web.logging.ServerLogger;
 import io.github.edwardUL99.simple.web.server.AutoConfigurationServer;
 import io.github.edwardUL99.simple.web.server.Server;
@@ -51,7 +52,7 @@ public final class SimpleWebServer {
                 }
             }
 
-            return new Configuration(port, serverDirectory);
+            return new Configuration(port, serverDirectory, "paths.json");
         } else {
             return new Configuration();
         }
@@ -60,6 +61,9 @@ public final class SimpleWebServer {
     public static void run(Class<?> runningClass, String[] args) {
         Configuration.setGlobalConfiguration(getConfiguration(args));
         ServerLogger log = ServerLogger.getLogger();
+
+        WebServerInitializers.initialize();
+
         log.info(String.format("Starting SimpleWebServer from class %s", runningClass.getName()));
 
         serverInstance = new AutoConfigurationServer();

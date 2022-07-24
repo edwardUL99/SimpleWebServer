@@ -1,7 +1,6 @@
 package io.github.edwardUL99.simple.web.configuration;
 
 import io.github.edwardUL99.simple.web.Constants;
-import io.github.edwardUL99.simple.web.configuration.annotations.AnnotationsProcessor;
 import io.github.edwardUL99.simple.web.exceptions.ConfigurationException;
 
 import java.nio.file.Files;
@@ -13,16 +12,18 @@ import java.nio.file.Path;
 public class Configuration {
     private Integer port;
     private Path serverDirectory;
+    private String pathsFile; // path to a paths JSON registration file
     private static Configuration globalConfiguration;
 
-    public Configuration(Integer port, Path serverDirectory) {
+    public Configuration(Integer port, Path serverDirectory, String pathsFile) {
         this.port = port;
         this.serverDirectory = serverDirectory;
+        this.pathsFile = pathsFile;
         this.initialise();
     }
 
     public Configuration(Integer port) {
-        this(port, null);
+        this(port, null, "paths.json");
     }
 
     public Configuration() {
@@ -88,15 +89,16 @@ public class Configuration {
         this.serverDirectory = serverDirectory;
     }
 
+    public String getPathsFile() {
+        return pathsFile;
+    }
+
+    public void setPathsFile(String pathsFile) {
+        this.pathsFile = pathsFile;
+    }
+
     public static void setGlobalConfiguration(Configuration globalConfiguration) {
         Configuration.globalConfiguration = globalConfiguration;
-
-        try {
-            Class.forName("io.github.edwardUL99.simple.web.RegisteredHandlers");
-            AnnotationsProcessor.newInstance().processAnnotations(); // the new annotations processing method of registering handlers
-        } catch (ClassNotFoundException ex) {
-            throw new ConfigurationException("Failed to initialise request handlers", ex);
-        }
     }
 
     public static Configuration getGlobalConfiguration() {

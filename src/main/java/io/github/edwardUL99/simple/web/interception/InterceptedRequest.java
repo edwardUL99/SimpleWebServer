@@ -3,7 +3,6 @@ package io.github.edwardUL99.simple.web.interception;
 import io.github.edwardUL99.simple.web.requests.HTTPRequest;
 import io.github.edwardUL99.simple.web.requests.RequestMethod;
 import io.github.edwardUL99.simple.web.requests.response.HTTPResponse;
-import io.github.edwardUL99.simple.web.requests.response.ResponseBuilders;
 
 import java.util.Map;
 
@@ -20,7 +19,6 @@ public class InterceptedRequest implements HTTPRequest {
 
     public void setIntercepted(HTTPRequest intercepted) {
         this.intercepted = intercepted;
-        this.response = ResponseBuilders.serviceUnavailable(intercepted).build();
     }
 
     public HTTPRequest getIntercepted() {

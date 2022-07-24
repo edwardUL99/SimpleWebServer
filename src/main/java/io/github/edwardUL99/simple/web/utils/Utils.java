@@ -4,6 +4,9 @@ import io.github.edwardUL99.simple.web.exceptions.ParsingException;
 import io.github.edwardUL99.simple.web.exceptions.RequestException;
 import io.github.edwardUL99.simple.web.requests.HTTPRequest;
 import io.github.edwardUL99.simple.web.requests.response.ResponseBuilder;
+import org.reflections.Reflections;
+import org.reflections.util.ClasspathHelper;
+import org.reflections.util.ConfigurationBuilder;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -19,6 +22,11 @@ import static io.github.edwardUL99.simple.web.requests.response.ResponseBuilders
  * A utilities class
  */
 public final class Utils {
+    /**
+     * A reflections object to use for reflections
+     */
+    private static Reflections reflections;
+
     /**
      * Parse the content type of the given file
      * @param file the file to parse
@@ -75,5 +83,17 @@ public final class Utils {
         }
 
         return params;
+    }
+
+    /**
+     * Get a shared single instance reflections object that scans the Java classpath
+     * @return the shared reflections instance
+     */
+    public static Reflections getReflections() {
+        if (reflections == null)
+            reflections = new Reflections(new ConfigurationBuilder()
+                    .addUrls(ClasspathHelper.forJavaClassPath()));
+
+        return reflections;
     }
 }

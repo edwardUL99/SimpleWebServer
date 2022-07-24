@@ -22,4 +22,9 @@ public interface InterceptorChain<T> {
      * @return the result of interception, null if end not reached
      */
     T getResult();
+
+    /**
+     * Resets the chain to the start
+     */
+    void reset();
 }

@@ -1,12 +1,12 @@
 package io.github.edwardUL99.simple.web.interception;
 
 /**
- * An interceptor that operates on an incoming HTTPRequest
+ * An interceptor that operates on an incoming HTTPRequest. Any subclass is automatically registered by the server on
+ *  * initialization so ensure this class is subclassed rather than implementing the interface directly
  */
 public abstract class RequestInterceptor implements Interceptor<InterceptedRequest> {
 
     protected RequestInterceptor() {
-        WebInterceptionDispatcher.getInstance().addRequestInterceptor(this);
     }
 
     /**

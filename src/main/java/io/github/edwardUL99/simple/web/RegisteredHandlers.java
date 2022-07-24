@@ -3,6 +3,7 @@ package io.github.edwardUL99.simple.web;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import io.github.edwardUL99.simple.web.configuration.Configuration;
 import io.github.edwardUL99.simple.web.logging.ServerLogger;
 import io.github.edwardUL99.simple.web.requests.RequestMethod;
 import io.github.edwardUL99.simple.web.requests.handling.ConfiguredHandlers;
@@ -28,10 +29,6 @@ public class RegisteredHandlers {
     private static final ConfiguredHandlers HANDLERS = RequestDispatcher.getInstance().getHandlers();
     private static final ServerLogger log = ServerLogger.getLogger();
     private static final Gson gson = new Gson();
-
-    static {
-        configure(); // configures from paths.json on classpath
-    }
 
     private static boolean isServerStarted() {
         Server server = SimpleWebServer.getServerInstance();
@@ -63,8 +60,9 @@ public class RegisteredHandlers {
         }
     }
 
-    private static void configure() {
-        URL url = RegisteredHandlers.class.getClassLoader().getResource("paths.json");
+    public static void configure() throws IOException {
+        URL url = RegisteredHandlers.class.getClassLoader()
+                .getResource(Configuration.getGlobalConfiguration().getPathsFile());
 
         if (url != null) {
             try {
@@ -87,9 +85,10 @@ public class RegisteredHandlers {
                     }
                 }
             } catch (IOException ex) {
-                ex.printStackTrace();
                 log.error("Failed to read configuration from paths.json with error");
                 log.throwable(ex);
+
+                throw ex;
             }
         } else {
             log.info("No paths.json found on class path");
