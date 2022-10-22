@@ -2,6 +2,7 @@ package io.github.edwardUL99.simple.web.configuration.annotations;
 
 import io.github.edwardUL99.simple.web.RegisteredHandlers;
 import io.github.edwardUL99.simple.web.exceptions.ConfigurationException;
+import io.github.edwardUL99.simple.web.injection.Injection;
 import io.github.edwardUL99.simple.web.requests.RequestMethod;
 import io.github.edwardUL99.simple.web.requests.handling.reflection.ReflectiveInvocationHandler;
 import io.github.edwardUL99.simple.web.requests.response.HTTPResponse;
@@ -76,6 +77,7 @@ public class AnnotationsProcessorImpl implements AnnotationsProcessor {
                 throw new ConfigurationException("Controllers must have a public no-arg constructor: " + controller.getName());
 
             Object instance = constructor.newInstance();
+            Injection.getResourceInjector().inject(instance);
             processHandlerMethods(instance, controller);
         } catch (NoSuchMethodException ex) {
             throw new ConfigurationException("Controllers must have a no-arg constructor: " + controller.getName());
