@@ -10,6 +10,8 @@ public class WebServerInitializers {
     private static final List<WebServerInitializer> initializers = new ArrayList<>();
 
     static {
+        // we need to initialize resources before controllers
+        initializers.add(new InjectablesInitializer());
         initializers.add(new RequestHandlersInitializer());
         initializers.add(new InterceptorsInitializer());
     }

@@ -2,16 +2,13 @@ package io.github.edwardUL99.simple.web.configuration.annotations;
 
 import io.github.edwardUL99.simple.web.RegisteredHandlers;
 import io.github.edwardUL99.simple.web.exceptions.ConfigurationException;
+import io.github.edwardUL99.simple.web.injection.Injection;
 import io.github.edwardUL99.simple.web.requests.RequestMethod;
 import io.github.edwardUL99.simple.web.requests.handling.reflection.ReflectiveInvocationHandler;
 import io.github.edwardUL99.simple.web.requests.response.HTTPResponse;
 import io.github.edwardUL99.simple.web.utils.Utils;
 import org.reflections.Reflections;
-import org.reflections.util.ClasspathHelper;
-import org.reflections.util.ConfigurationBuilder;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -70,16 +67,10 @@ public class AnnotationsProcessorImpl implements AnnotationsProcessor {
 
     private void processController(Class<?> controller) {
         try {
-            Constructor<?> constructor = controller.getDeclaredConstructor();
-
-            if (!Modifier.isPublic(constructor.getModifiers()))
-                throw new ConfigurationException("Controllers must have a public no-arg constructor: " + controller.getName());
-
-            Object instance = constructor.newInstance();
+            Object instance = Injection.getConstructorInjector().injectConstructor(controller);
+            Injection.getResourceInjector().inject(instance);
             processHandlerMethods(instance, controller);
-        } catch (NoSuchMethodException ex) {
-            throw new ConfigurationException("Controllers must have a no-arg constructor: " + controller.getName());
-        } catch (InvocationTargetException | IllegalAccessException | InstantiationException ex) {
+        } catch (Exception ex) {
             throw new ConfigurationException("Failed to initialise controller: " + controller.getName(), ex);
         }
     }
