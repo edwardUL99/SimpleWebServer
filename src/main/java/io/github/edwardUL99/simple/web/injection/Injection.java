@@ -4,7 +4,6 @@ import io.github.edwardUL99.simple.web.configuration.annotations.Injectable;
 import io.github.edwardUL99.simple.web.utils.Utils;
 import org.reflections.Reflections;
 
-import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
