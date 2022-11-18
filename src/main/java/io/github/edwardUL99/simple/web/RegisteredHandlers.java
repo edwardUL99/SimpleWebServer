@@ -3,6 +3,8 @@ package io.github.edwardUL99.simple.web;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import io.github.edwardUL99.inject.lite.exceptions.InjectionException;
+import io.github.edwardUL99.inject.lite.injector.Injector;
 import io.github.edwardUL99.simple.web.configuration.Configuration;
 import io.github.edwardUL99.simple.web.logging.ServerLogger;
 import io.github.edwardUL99.simple.web.requests.RequestMethod;
@@ -13,8 +15,6 @@ import io.github.edwardUL99.simple.web.server.Server;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.util.Map;
 
@@ -29,6 +29,7 @@ public class RegisteredHandlers {
     private static final ConfiguredHandlers HANDLERS = RequestDispatcher.getInstance().getHandlers();
     private static final ServerLogger log = ServerLogger.getLogger();
     private static final Gson gson = new Gson();
+    private static final Injector injector = Injector.get();
 
     private static boolean isServerStarted() {
         Server server = SimpleWebServer.getServerInstance();
@@ -47,15 +48,11 @@ public class RegisteredHandlers {
     private static void instantiate(String path, String className, RequestMethod method) {
         try {
             Class<?> cls = Class.forName(className);
-            Constructor<?> constructor = cls.getDeclaredConstructor();
-            register(method, path, (RequestHandler) constructor.newInstance());
+            register(method, path, (RequestHandler) injector.inject(cls));
         } catch (ClassNotFoundException ex) {
             log.error("Can't find handler " + className);
             log.throwable(ex);
-        } catch (NoSuchMethodException ex) {
-            log.error("Can't instantiate handler " + className + " as it does not have a no-arg constructor");
-            log.throwable(ex);
-        } catch (InvocationTargetException | InstantiationException | IllegalAccessException ex) {
+        } catch (InjectionException ex) {
             log.throwable(ex);
         }
     }

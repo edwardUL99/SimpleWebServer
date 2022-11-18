@@ -1,5 +1,7 @@
 package io.github.edwardUL99.simple.web.server;
 
+import io.github.edwardUL99.inject.lite.threads.AsynchronousExecutor;
+import io.github.edwardUL99.inject.lite.container.Container;
 import io.github.edwardUL99.simple.web.configuration.Configuration;
 import io.github.edwardUL99.simple.web.exceptions.ConfigurationException;
 import io.github.edwardUL99.simple.web.exceptions.FatalTerminationException;
@@ -23,21 +25,22 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import static io.github.edwardUL99.simple.web.requests.response.ResponseBuilders.*;
 
 /**
- * A server that automatically configures itself
+ * A server that automatically configures itself and is designed to run inside an injection
+ * container
  */
 public class AutoConfigurationServer extends BaseServer {
     private final RequestDispatcher requestDispatcher = RequestDispatcher.getInstance();
     private final ServerLogger serverLog = ServerLogger.getLogger();
     private boolean started;
+    private final Container container;
 
-    public AutoConfigurationServer() {
+    public AutoConfigurationServer(Container container) {
         super(null, null, null);
+        this.container = container;
         this.initialise();
     }
 
@@ -113,7 +116,8 @@ public class AutoConfigurationServer extends BaseServer {
     }
 
     private void run() {
-        ExecutorService executorService = Executors.newFixedThreadPool(30);
+        // We want child threads to use the container's injectors, so use the containerSafeExecutor
+        AsynchronousExecutor executor = container.asyncExecutor();
 
         boolean run = true;
 
@@ -122,7 +126,7 @@ public class AutoConfigurationServer extends BaseServer {
                 started = true;
                 ReceivedRequest received = receiver.receive();
 
-                executorService.submit(() -> processRequest(received));
+                executor.schedule(() -> processRequest(received));
             } catch (SocketException ex) {
                 run = !(ex.getCause() instanceof BindException);
                 serverLog.throwable(ex);

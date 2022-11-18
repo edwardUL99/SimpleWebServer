@@ -1,30 +1,35 @@
-package io.github.edwardUL99.simple.web.configuration.annotations;
+package io.github.edwardUL99.simple.web.configuration;
 
+import io.github.edwardUL99.inject.lite.annotations.processing.AnnotationProcessor;
+import io.github.edwardUL99.inject.lite.annotations.processing.CustomInjectableProcessor;
 import io.github.edwardUL99.simple.web.RegisteredHandlers;
+import io.github.edwardUL99.simple.web.configuration.annotations.RequestController;
+import io.github.edwardUL99.simple.web.configuration.annotations.RequestHandler;
 import io.github.edwardUL99.simple.web.exceptions.ConfigurationException;
-import io.github.edwardUL99.simple.web.injection.Injection;
 import io.github.edwardUL99.simple.web.requests.RequestMethod;
 import io.github.edwardUL99.simple.web.requests.handling.reflection.ReflectiveInvocationHandler;
 import io.github.edwardUL99.simple.web.requests.response.HTTPResponse;
-import io.github.edwardUL99.simple.web.utils.Utils;
-import org.reflections.Reflections;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
- * Implementation of our annotations processor
+ * Utility class for configuring a request controller
  */
-public class AnnotationsProcessorImpl implements AnnotationsProcessor {
-    private final Reflections reflection = Utils.getReflections();
+public final class RequestControllerConfigurer {
+    /**
+     * The processor to configure request controllers as custom injectables
+     */
+    public static final AnnotationProcessor<RequestController> requestControllerProcessor;
 
-    private List<Class<?>> getControllers() {
-        return new ArrayList<>(reflection.getTypesAnnotatedWith(RequestController.class));
+    static {
+        requestControllerProcessor = new CustomInjectableProcessor<>(
+                a -> a.getType().getName(),
+                RequestControllerConfigurer::configureController
+        );
     }
 
-    private void validateMethod(Method method) {
+    private static void validateMethod(Method method) {
         String methodName = method.getDeclaringClass().getName() + "." + method.getName();
 
         if (!Modifier.isPublic(method.getModifiers()))
@@ -34,7 +39,7 @@ public class AnnotationsProcessorImpl implements AnnotationsProcessor {
             throw new ConfigurationException("Handler methods must return a HTTPResponse implementation: " + methodName);
     }
 
-    private String addBasePath(String basePath, String path) {
+    private static String addBasePath(String basePath, String path) {
         if (basePath != null && !basePath.isEmpty()) {
             if (!basePath.endsWith("/") && !path.startsWith("/"))
                 basePath += "/";
@@ -45,7 +50,7 @@ public class AnnotationsProcessorImpl implements AnnotationsProcessor {
         return path;
     }
 
-    private void processHandlerMethods(Object instance, Class<?> controller) {
+    private static void processHandlerMethods(Object instance, Class<?> controller) {
         for (Method method : controller.getMethods()) {
             RequestHandler handler = method.getAnnotation(RequestHandler.class);
 
@@ -65,28 +70,11 @@ public class AnnotationsProcessorImpl implements AnnotationsProcessor {
         }
     }
 
-    private void processController(Class<?> controller) {
-        try {
-            Object instance = Injection.getConstructorInjector().injectConstructor(controller);
-            Injection.getResourceInjector().inject(instance);
-            processHandlerMethods(instance, controller);
-        } catch (Exception ex) {
-            throw new ConfigurationException("Failed to initialise controller: " + controller.getName(), ex);
-        }
-    }
-
-    private void processAndRegister() {
-        List<Class<?>> controllers = getControllers();
-        controllers.forEach(this::processController);
-    }
-
     /**
-     * Process annotations and register the handlers
-     *
-     * @throws ConfigurationException if any annotation fails to be processed
+     * Configure the provided controller and handler methods
+     * @param controller the controller object
      */
-    @Override
-    public void processAnnotations() throws ConfigurationException {
-        processAndRegister();
+    public static void configureController(Object controller) {
+        processHandlerMethods(controller, controller.getClass());
     }
 }
