@@ -11,7 +11,7 @@
     <properties>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
-        <inject.lite.version>1.0.0</inject.lite.version>
+        <inject.lite.version>1.0.1</inject.lite.version>
     </properties>
 
     <dependencies>
