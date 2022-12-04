@@ -1,6 +1,7 @@
 package io.github.edwardUL99.simple.web;
 
 import io.github.edwardUL99.inject.lite.Injection;
+import io.github.edwardUL99.inject.lite.config.ConfigurationBuilder;
 import io.github.edwardUL99.inject.lite.container.Container;
 import io.github.edwardUL99.inject.lite.container.ContainerAnnotationProcessor;
 import io.github.edwardUL99.inject.lite.container.ContainerBuilder;
@@ -99,7 +100,8 @@ public final class SimpleWebServer {
         String controllers = webPackage + ".controllers";
         String services = webPackage + ".services";
 
-        Injection.setInjectionPackages(runningClass.getPackageName(), controllers, services);
+        Injection.configure(new ConfigurationBuilder()
+                .withInjectionPackagePrefixes(runningClass.getPackageName(), controllers, services));
     }
 
     public static void run(Class<?> runningClass, String[] args) {
